@@ -434,7 +434,8 @@ export default function BookingPage() {
       const [sh, sm] = selectedTime.split(":").map(Number)
       const endMin = sh * 60 + sm + selectedService.duration_min
       const endTime = `${String(Math.floor(endMin/60)).padStart(2,"0")}:${String(endMin%60).padStart(2,"0")}`
-      const res = await fetch(`/api/p/${slug}/bookings`, {
+      const API = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+      const res = await fetch(`${API}/p/${slug}/bookings`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
