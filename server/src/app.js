@@ -14,6 +14,8 @@ const paymentRoutes  = require('./routes/payments.routes')
 
 const app = express()
 
+app.set('trust proxy', 1) // ← necesario para Railway/Vercel detrás de proxy
+
 // Seguridad
 app.use(helmet())
 app.use(cors({
@@ -23,14 +25,14 @@ app.use(cors({
 
 // Rate limiting global
 app.use(rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 min
+  windowMs: 15 * 60 * 1000,
   max: 200,
   message: { error: 'Demasiadas solicitudes, intenta más tarde.' }
 }))
 
 // Rate limiting estricto para reservas públicas
 const bookingLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hora
+  windowMs: 60 * 60 * 1000,
   max: 10,
   message: { error: 'Límite de reservas alcanzado. Intenta en 1 hora.' }
 })
