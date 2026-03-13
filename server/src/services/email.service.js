@@ -1,8 +1,7 @@
-const Brevo = require("@getbrevo/brevo")
+const { TransactionalEmailsApi, SendSmtpEmail, ApiClient } = require("@getbrevo/brevo")
 
-const client = Brevo.ApiClient.instance
-client.authentications["api-key"].apiKey = process.env.BREVO_API_KEY
-const transactionalApi = new Brevo.TransactionalEmailsApi()
+const apiInstance = new TransactionalEmailsApi()
+apiInstance.authentications["api-key"].apiKey = process.env.BREVO_API_KEY
 
 function formatDate(dateStr) {
   const d = new Date(dateStr + "T00:00:00")
@@ -30,7 +29,7 @@ async function sendBookingNotificationToAdmin({ booking, service, business }) {
   const dateFormatted = formatDate(booking.booking_date)
   const price = formatCLP(service.price)
 
-  const email = new Brevo.SendSmtpEmail()
+  const email = new SendSmtpEmail()
   email.sender = { name: "BookBarber", email: process.env.EMAIL_USER }
   email.to = [{ email: business.email }]
   email.subject = `Nueva reserva - ${booking.client_name} - ${service.name}`
@@ -57,7 +56,7 @@ async function sendBookingNotificationToAdmin({ booking, service, business }) {
   </div>
 </body></html>`
 
-  await transactionalApi.sendTransacEmail(email)
+  await apiInstance.sendTransacEmail(email)
 }
 
 async function sendBookingConfirmationToClient({ booking, service, business }) {
@@ -66,7 +65,7 @@ async function sendBookingConfirmationToClient({ booking, service, business }) {
   const googleCalUrl = getGoogleCalUrl({ booking, service, business })
   const cancelUrl = `${process.env.CLIENT_URL}/b/${business.slug}/cancelar/${booking.confirmation_token}`
 
-  const email = new Brevo.SendSmtpEmail()
+  const email = new SendSmtpEmail()
   email.sender = { name: "BookBarber", email: process.env.EMAIL_USER }
   email.to = [{ email: booking.client_email }]
   email.subject = `Reserva confirmada en ${business.name} - ${service.name}`
@@ -74,7 +73,6 @@ async function sendBookingConfirmationToClient({ booking, service, business }) {
 <body style="margin:0;padding:0;background:#f9fafb;font-family:sans-serif">
   <div style="max-width:560px;margin:32px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1)">
     <div style="background:linear-gradient(135deg,#f59e0b,#d97706);padding:32px;text-align:center">
-      <div style="font-size:40px;margin-bottom:8px">&#x2705;</div>
       <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700">Reserva confirmada!</h1>
       <p style="margin:6px 0 0;color:#fef3c7;font-size:14px">${business.name}</p>
     </div>
@@ -100,7 +98,7 @@ async function sendBookingConfirmationToClient({ booking, service, business }) {
   </div>
 </body></html>`
 
-  await transactionalApi.sendTransacEmail(email)
+  await apiInstance.sendTransacEmail(email)
 }
 
 module.exports = { sendBookingNotificationToAdmin, sendBookingConfirmationToClient }
