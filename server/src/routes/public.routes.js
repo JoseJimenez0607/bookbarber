@@ -74,12 +74,10 @@ router.post("/:slug/bookings", async (req, res) => {
       .from("services").select("*").eq("id", service_id).single()
 
     // Enviar emails (sin bloquear la respuesta)
-        try {
-      await sendBookingNotificationToAdmin({ booking, service, business })
-      await sendBookingConfirmationToClient({ booking, service, business })
-    } catch (err) {
-      console.error("EMAIL ERROR:", err.message, err.code)
-    }
+    Promise.all([
+      sendBookingNotificationToAdmin({ booking, service, business }),
+      sendBookingConfirmationToClient({ booking, service, business })
+    ]).catch(err => console.error("Error enviando emails:", err))
 
     res.status(201).json(booking)
   } catch (err) {
