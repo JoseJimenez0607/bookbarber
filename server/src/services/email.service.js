@@ -1,7 +1,4 @@
-const { TransactionalEmailsApi, SendSmtpEmail, ApiClient } = require("@getbrevo/brevo")
-
-const apiInstance = new TransactionalEmailsApi()
-apiInstance.authentications["api-key"].apiKey = process.env.BREVO_API_KEY
+const BREVO_URL = "https://api.brevo.com/v3/smtp/email"
 
 function formatDate(dateStr) {
   const d = new Date(dateStr + "T00:00:00")
@@ -25,15 +22,35 @@ function getGoogleCalUrl({ booking, service, business }) {
   return url.toString()
 }
 
+async function sendEmail({ to, subject, htmlContent }) {
+  const res = await fetch(BREVO_URL, {
+    method: "POST",
+    headers: {
+      "accept": "application/json",
+      "content-type": "application/json",
+      "api-key": process.env.BREVO_API_KEY
+    },
+    body: JSON.stringify({
+      sender: { name: "BookBarber", email: process.env.EMAIL_USER },
+      to: [{ email: to }],
+      subject,
+      htmlContent
+    })
+  })
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`Brevo error: ${err}`)
+  }
+}
+
 async function sendBookingNotificationToAdmin({ booking, service, business }) {
   const dateFormatted = formatDate(booking.booking_date)
   const price = formatCLP(service.price)
 
-  const email = new SendSmtpEmail()
-  email.sender = { name: "BookBarber", email: process.env.EMAIL_USER }
-  email.to = [{ email: business.email }]
-  email.subject = `Nueva reserva - ${booking.client_name} - ${service.name}`
-  email.htmlContent = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"></head>
+  await sendEmail({
+    to: business.email,
+    subject: `Nueva reserva - ${booking.client_name} - ${service.name}`,
+    htmlContent: `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"></head>
 <body style="margin:0;padding:0;background:#f9fafb;font-family:sans-serif">
   <div style="max-width:560px;margin:32px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1)">
     <div style="background:linear-gradient(135deg,#1f2937,#374151);padding:32px;text-align:center">
@@ -55,8 +72,7 @@ async function sendBookingNotificationToAdmin({ booking, service, business }) {
     </div>
   </div>
 </body></html>`
-
-  await apiInstance.sendTransacEmail(email)
+  })
 }
 
 async function sendBookingConfirmationToClient({ booking, service, business }) {
@@ -65,11 +81,10 @@ async function sendBookingConfirmationToClient({ booking, service, business }) {
   const googleCalUrl = getGoogleCalUrl({ booking, service, business })
   const cancelUrl = `${process.env.CLIENT_URL}/b/${business.slug}/cancelar/${booking.confirmation_token}`
 
-  const email = new SendSmtpEmail()
-  email.sender = { name: "BookBarber", email: process.env.EMAIL_USER }
-  email.to = [{ email: booking.client_email }]
-  email.subject = `Reserva confirmada en ${business.name} - ${service.name}`
-  email.htmlContent = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"></head>
+  await sendEmail({
+    to: booking.client_email,
+    subject: `Reserva confirmada en ${business.name} - ${service.name}`,
+    htmlContent: `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"></head>
 <body style="margin:0;padding:0;background:#f9fafb;font-family:sans-serif">
   <div style="max-width:560px;margin:32px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1)">
     <div style="background:linear-gradient(135deg,#f59e0b,#d97706);padding:32px;text-align:center">
@@ -97,8 +112,7 @@ async function sendBookingConfirmationToClient({ booking, service, business }) {
     </div>
   </div>
 </body></html>`
-
-  await apiInstance.sendTransacEmail(email)
+  })
 }
 
 module.exports = { sendBookingNotificationToAdmin, sendBookingConfirmationToClient }
